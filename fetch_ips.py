@@ -17,7 +17,12 @@ for path in POSSIBLE_HOSTS_PATHS:
         HOSTS_FILE_PATH = path
         break
 
-DNS_SERVER = '8.8.8.8'
+DNS_SERVERS = [
+    '8.8.8.8',      # Google
+    '1.1.1.1',      # Cloudflare
+    '223.5.5.5',    # AliDNS
+    '119.29.29.29'  # DNSPod
+]
 
 def get_domains_from_hosts(file_path):
     """
@@ -53,23 +58,44 @@ def check_connectivity(ip, port=443, timeout=3):
 
 def resolve_domain(domain):
     """
-    Resolves the domain to A records (IPv4) and checks for connectivity.
+    Resolves the domain to A records (IPv4) using multiple DNS servers and checks for connectivity.
     Returns the first working IP found.
     """
-    resolver = dns.resolver.Resolver()
-    resolver.nameservers = [DNS_SERVER]
+    candidate_ips = []
+    seen_ips = set()
+
+    for dns_server in DNS_SERVERS:
+        try:
+            resolver = dns.resolver.Resolver()
+            resolver.nameservers = [dns_server]
+            # Set a short timeout for DNS queries to speed up the process
+            resolver.lifetime = 2
+            resolver.timeout = 2
+            
+            answers = resolver.resolve(domain, 'A')
+            for rdata in answers:
+                ip = rdata.to_text()
+                if ip not in seen_ips:
+                    candidate_ips.append(ip)
+                    seen_ips.add(ip)
+        except Exception:
+            # Ignore errors from individual DNS servers (timeout, nxdomain, etc.)
+            continue
     
-    try:
-        answers = resolver.resolve(domain, 'A')
-        for rdata in answers:
-             ip = rdata.to_text()
-             if check_connectivity(ip):
-                 return ip
-        print(f"Warning: No IPs for {domain} passed connectivity check.")
+    if not candidate_ips:
+        print(f"Warning: No IPs found for {domain} from any DNS server.")
         return None
-    except Exception as e:
-        print(f"Error resolving {domain}: {e}")
-        return None
+
+    # Check connectivity for candidates
+    for ip in candidate_ips:
+        if check_connectivity(ip):
+            print(f"  [+] Working IP for {domain}: {ip}")
+            return ip
+        else:
+            print(f"  [-] IP {ip} failed connectivity check.")
+            
+    print(f"Warning: No IPs for {domain} passed connectivity check (tried {len(candidate_ips)} candidates).")
+    return None
 
 def main():
     if not HOSTS_FILE_PATH:
@@ -83,7 +109,7 @@ def main():
         print("No domains found or file is empty.")
         sys.exit(1)
 
-    print(f"Found {len(domains)} domains. Resolving using {DNS_SERVER}...")
+    print(f"Found {len(domains)} domains. Resolving using multiple DNS servers: {DNS_SERVERS}...")
     
     new_hosts_content = []
     
