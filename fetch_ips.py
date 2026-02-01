@@ -1,6 +1,7 @@
 import dns.resolver
 import os
 import sys
+import socket
 
 # Configuration
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -39,18 +40,33 @@ def get_domains_from_hosts(file_path):
                 domains.append(parts[1])
     return domains
 
+def check_connectivity(ip, port=443, timeout=3):
+    """
+    Checks if a TCP connection can be established to the IP on the specified port.
+    Returns True if successful, False otherwise.
+    """
+    try:
+        with socket.create_connection((ip, port), timeout=timeout):
+            return True
+    except (socket.timeout, socket.error):
+        return False
+
 def resolve_domain(domain):
     """
-    Resolves the domain to an A record (IPv4) using the specified DNS server.
+    Resolves the domain to A records (IPv4) and checks for connectivity.
+    Returns the first working IP found.
     """
     resolver = dns.resolver.Resolver()
     resolver.nameservers = [DNS_SERVER]
     
     try:
         answers = resolver.resolve(domain, 'A')
-        # Return the first IP found
         for rdata in answers:
-            return rdata.to_text()
+             ip = rdata.to_text()
+             if check_connectivity(ip):
+                 return ip
+        print(f"Warning: No IPs for {domain} passed connectivity check.")
+        return None
     except Exception as e:
         print(f"Error resolving {domain}: {e}")
         return None
