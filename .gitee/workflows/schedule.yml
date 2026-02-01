@@ -1,0 +1,45 @@
+name: Update Hosts (Gitee)
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Run every hour via Gitee Schedule
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  update-hosts:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4 # Gitee Actions supports compatible GitHub Actions
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # Use simple mirror for speed in China
+        pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: Run fetch_ips script
+      run: python fetch_ips.py
+
+    - name: Commit and push changes
+      run: |
+        git config --global user.name "Gitee Action"
+        git config --global user.email "action@gitee.com"
+        # Check if hosts.txt changed
+        if [[ -n $(git status --porcelain hosts.txt) ]]; then
+          git add hosts.txt
+          git commit -m "Update hosts.txt from Gitee Action"
+          git push origin main
+        else
+          echo "No changes to hosts.txt"
+        fi
