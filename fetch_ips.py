@@ -18,10 +18,10 @@ for path in POSSIBLE_HOSTS_PATHS:
         break
 
 DNS_SERVERS = [
-    '8.8.8.8',      # Google
-    '1.1.1.1',      # Cloudflare
     '223.5.5.5',    # AliDNS
-    '119.29.29.29'  # DNSPod
+    '119.29.29.29', # DNSPod
+    '8.8.8.8',      # Google
+    '1.1.1.1'       # Cloudflare
 ]
 
 def get_domains_from_hosts(file_path):
