@@ -1,5 +1,6 @@
 import dns.resolver
 import os
+import sys
 
 # Configuration
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -57,14 +58,14 @@ def resolve_domain(domain):
 def main():
     if not HOSTS_FILE_PATH:
         print(f"Error: Could not find hosts file in any of the expected locations: {POSSIBLE_HOSTS_PATHS}")
-        return
+        sys.exit(1)
 
     print(f"Reading domains from {HOSTS_FILE_PATH}...")
     domains = get_domains_from_hosts(HOSTS_FILE_PATH)
     
     if not domains:
         print("No domains found or file is empty.")
-        return
+        sys.exit(1)
 
     print(f"Found {len(domains)} domains. Resolving using {DNS_SERVER}...")
     
