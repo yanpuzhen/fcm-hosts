@@ -7,5 +7,5 @@
 192.178.213.188 alt6-mtalk.google.com
 142.251.127.188 alt7-mtalk.google.com
 172.253.148.188 alt8-mtalk.google.com
-142.251.13.93   dl.google.com
-142.250.31.136  dl.l.google.com
+142.251.13.136  dl.google.com
+142.250.31.190  dl.l.google.com
